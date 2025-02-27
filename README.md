@@ -28,8 +28,8 @@ Este projeto é uma versão refinada de um dos desafios do Bootcamp Inteligênci
 - Banco de Dados Relacional MySQL 
 
 ## Diagramas
-###Diagrama Conceitual
+### Diagrama Conceitual
 ![Modelo Conceitual](modelo_conceitual.png)
 
-#Diagrama Lógico
+### Diagrama Lógico
 ![Modelo Lógico](modelo_logico.png)
