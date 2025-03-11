@@ -1,0 +1,155 @@
+use ecommerce;
+show tables;
+
+INSERT INTO clients (Fname, Minit, Lname, CPF_CNPJ, Address) VALUES 
+('Ana', 'M', 'Silva', '12345678901', 'Rua A, 123'),
+('Carlos', 'J', 'Souza', '98765432100', 'Rua B, 456'),
+('Beatriz', 'L', 'Mendes', '45612378912', 'Rua C, 789');
+
+select * from clients;
+UPDATE clients
+SET birth_date = '1987-02-16'
+WHERE idClient = 3; 
+
+INSERT INTO product (Pname, classification_kids, category, avaliacao, valor) VALUES 
+('Celular', false, 'Eletronico', 4.5, 1500.00),
+('Camiseta', false, 'Vestimenta', 4.2, 50.00),
+('Boneca', true, 'Brinquedo', 4.8, 120.00),
+('Sofá', false, 'Moveis', 4.0, 2500.00);
+
+INSERT INTO payments (idPayment, idClient, typePayment, limitAvaliable, datePayment, statusPayment) VALUES 
+(1, 1, 'Pix', 500.00, '2025-03-10', 'Aprovado'),
+(2, 2, 'Cartao', 1000.00, '2025-03-09', 'Aguardando pagamento'),
+(3, 3, 'Boleto', 300.00, '2025-03-08', 'Em processo');
+
+INSERT INTO orders (idOrderClient, orderStatus, orderDescription, idpayments, sentValue, paymentCash) VALUES 
+(1, 'Confirmado', 'Pedido de celular', 1, 1500.00, false),
+(2, 'Em processamento', 'Pedido de camiseta', 2, 50.00, true),
+(3, 'Cancelado', 'Pedido de boneca', 3, 120.00, false);
+
+INSERT INTO productStorage (storageLocation, quantity) VALUES 
+('Depósito A', 100),
+('Depósito B', 50),
+('Depósito C', 30);
+
+INSERT INTO supplier (SocialName, CNPJ, contact) VALUES 
+('Fornecedor X', '11222333444455', '11988887777'),
+('Fornecedor Y', '22333444555566', '11977776666');
+
+INSERT INTO seller (SocialName, AbstName, location, CPF_CNPJ) VALUES 
+('Vendedor 1', 'Loja A', 'São Paulo', '12345678901'),
+('Vendedor 2', 'Loja B', 'Rio de Janeiro', '98765432100');
+
+INSERT INTO productSeller (idPseller, idProduct, Quantity) VALUES 
+(1, 1, 10),
+(2, 2, 20);
+
+INSERT INTO productOrder (idPOproduct, idPOorder, poQuantity, poStatus) VALUES 
+(1, 1, 1, 'Disponivel'),
+(2, 2, 2, 'Disponivel');
+
+INSERT INTO storageLocation (idLproduct, idLstorage) VALUES 
+(1, 1),
+(2, 2);
+
+INSERT INTO productSupplier (idPsSupplier, idPsProduct, quantity) VALUES 
+(1, 1, 50),
+(2, 2, 30);
+
+INSERT INTO delivery (idOrder, deliveryStatus, trackingCode) VALUES 
+(1, 'Em trânsito', 'TRK123456'),
+(2, 'Pendente', 'TRK654321');
+
+select * from productSeller;
+
+-- conta quanto clientes tem
+select count(*) from clients;
+
+-- seleciona info de clientes e ordens juntas
+select * from clients c, orders o where c.idClient = idOrderClient;
+
+select concat(Fname,' ' , Lname) as completeName , idOrder as Request ,orderStatus from clients c, orders o where c.idClient = idOrderClient;
+
+select * from clients c, orders o
+	where c.idClient = idOrderClient
+    group by idOrder;
+
+-- qual a idade dos clientes
+SELECT Fname, Lname, birth_date, TIMESTAMPDIFF(YEAR, birth_Date, CURDATE()) AS age 
+FROM clients;
+
+--  ordenar nome dos clientes
+SELECT 
+    CONCAT(Fname, ' ', Lname) AS nome_completo
+FROM clients
+ORDER BY nome_completo ASC;
+
+INSERT INTO orders (idOrderClient, orderStatus, orderDescription, idpayments, sentValue, paymentCash)
+VALUES (1, 'Confirmado', 'Pedido de sofá', 1, 2500.00, false);
+
+select * from orders;
+
+INSERT INTO productOrder (idPOproduct, idPOorder, poQuantity, poStatus)
+VALUES (4, 4, 1, 'Disponivel');
+
+SELECT * FROM productOrder;
+
+-- Quantos pedidos foram feitos por cada cliente?
+SELECT 
+    c.idClient,
+    CONCAT(Fname, ' ', Lname) AS completeName,
+    SUM(po.poQuantity) AS total_quantity
+FROM orders o
+JOIN clients c ON o.idOrderClient = c.idClient
+JOIN productOrder po ON o.idOrder = po.idPOorder
+JOIN product p ON po.idPOproduct = p.idProduct
+GROUP BY c.idClient; -- Agrupa os resultados por cliente
+
+-- Algum vendedor também é fornecedor?
+select * from seller;
+
+select * from supplier;
+
+INSERT INTO supplier (SocialName, CNPJ, contact)
+VALUES ('Fornecedor Z', '12345678901', '11999998888');
+
+SELECT s.SocialName, se.SocialName
+FROM supplier s
+JOIN seller se ON s.CNPJ = se.CNPJ;
+
+-- Relação de produtos fornecedores e estoques;
+select * from storageLocation;
+
+SELECT 
+    p.idProduct AS id_produto,
+    p.Pname AS nome_produto,
+    s.idSupplier AS id_fornecedor,
+    s.SocialName AS nome_fornecedor,
+    ps.quantity AS quantidade_fornecida,
+    st.idProdStorage AS id_estoque,
+    st.storageLocation AS local_estoque
+FROM product p
+JOIN productSupplier ps ON p.idProduct = ps.idPsProduct
+JOIN supplier s ON ps.idPsSupplier = s.idSupplier
+JOIN storageLocation sl ON p.idProduct = sl.idLproduct
+JOIN productStorage st ON sl.idLstorage = st.idProdStorage;
+
+-- Relação de nomes dos fornecedores e nomes dos produtos;
+SELECT 
+    s.SocialName AS nome_fornecedor,
+    p.Pname AS nome_produto
+FROM supplier s
+JOIN productSupplier ps ON s.idSupplier = ps.idPsSupplier
+JOIN product p ON ps.idPsProduct = p.idProduct;
+
+-- Quais produtos têm uma avaliação média superior a 4 e estão disponíveis em estoque?
+SELECT 
+    p.Pname AS nome_produto,
+    AVG(p.avaliacao) AS media_avaliacao,
+    SUM(st.quantity) AS total_estoque
+FROM product p
+JOIN storageLocation sl ON p.idProduct = sl.idLproduct
+JOIN productStorage st ON sl.idLstorage = st.idProdStorage
+GROUP BY p.idProduct
+HAVING media_avaliacao > 4 AND total_estoque > 0;
+
