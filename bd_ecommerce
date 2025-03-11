@@ -1,0 +1,139 @@
+create database ecommerce;
+use ecommerce;
+
+-- criar tabela cliente
+create table clients(
+	idClient int auto_increment primary key,
+	Fname varchar(10),
+	Minit char(3),
+	Lname varchar(20),
+	CPF_CNPJ varchar(15) not null,
+	Address varchar(30),
+	constraint unique_CPF_CNPJ unique(CPF_CNPJ)
+);
+-- para manter a sequencia se voce deletar um registro o prox ser id +1
+alter table clients auto_increment = 1;
+alter table clients add column birth_date date;
+
+desc clients;
+
+-- criar tabela produto
+create table product(
+	idProduct int auto_increment primary key,
+	Pname varchar(10) not null,
+	classification_kids bool default false,
+	category enum('Eletronico','Vestimenta','Brinquedo','Alimento','Moveis') not null,
+	avaliacao float default 0,
+	valor float not null
+);
+alter table product auto_increment = 1;
+desc product;
+-- criar tabela pagamentos
+-- quando duas chaves são primary key é chave composta, garante qu o cliente
+-- escolha só uma forma de pagamento 
+
+CREATE TABLE payments(
+    idPayment INT,  
+    idClient INT NOT NULL,
+    typePayment ENUM('Boleto', 'Cartao', 'Pix'),
+    limitAvaliable FLOAT DEFAULT 10,
+    datePayment DATE,
+    statusPayment ENUM('Aguardando pagamento', 'Em processo', 'Aprovado', 'Recusado', 'Estornado', 'Cancelado') NOT NULL,
+    PRIMARY KEY(idClient, idPayment),
+    CONSTRAINT fk_payments_client FOREIGN KEY (idClient) REFERENCES clients(idClient)
+);
+
+
+-- criar tabela pedido
+create table orders(
+	idOrder int auto_increment primary key,
+	idOrderClient int,
+	orderStatus enum('Cancelado','Confirmado','Em processamento') default 'Em processamento',
+	orderDescription varchar(255),
+    idpayments int,
+	sentValue float default 10,
+    paymentCash bool default false,
+    constraint fk_orders_client foreign key(idOrderClient) references clients(idClient),
+    CONSTRAINT fk_orders_payment FOREIGN KEY (idOrderClient, idpayments) REFERENCES payments(idClient, idPayment)
+);
+alter table orders auto_increment = 1;
+desc orders;
+-- criar tabela estoque
+create table productStorage(
+	idProdStorage int auto_increment primary key,
+	storageLocation varchar(255),
+	quantity int default 0
+);
+alter table productStorage auto_increment = 1;
+
+-- create table fornecedor
+create table supplier(
+	idSupplier int auto_increment primary key,
+	SocialName varchar(255),
+	CNPJ varchar(15) not null,
+	contact char(11) not null,
+    constraint unique_supplier unique(CNPJ)
+);
+
+alter table supplier auto_increment = 1;
+desc supplier;
+-- create table vendedor
+create table seller(
+	idSeller int auto_increment primary key,
+	SocialName varchar(255),
+    AbstName varchar(255),
+    location varchar(30),
+	CPF_CNPJ varchar(15) not null,
+    constraint unique_supplier unique(CPF_CNPJ)
+);
+alter table seller auto_increment = 1;
+ALTER TABLE seller
+CHANGE COLUMN CPF_CNPJ CNPJ VARCHAR(15) NOT NULL;
+desc seller;
+
+create table productSeller(
+	idPseller int,
+	idProduct int,
+	Quantity int default 1,
+	primary key(idPseller,idProduct),
+	constraint fk_product_seller foreign key(idPseller) references seller(idSeller),
+	constraint fk_product_product foreign key(idProduct) references product(idProduct)
+);
+
+desc productSeller;
+create table productOrder(
+	idPOproduct int,
+	idPOorder int,
+	poQuantity int default 1,
+    poStatus enum('Disponivel','Sem estoque') default 'Disponivel',
+	primary key(idPOproduct,idPOorder),
+	constraint fk_productorder_seller foreign key(idPOproduct) references product(idProduct),
+	constraint fk_productorder_product foreign key(idPOorder) references orders(idOrder)
+);
+
+create table storageLocation(
+	idLproduct int,
+	idLstorage int,
+	primary key(idLproduct,idLstorage),
+	constraint fk_storage_location_product foreign key(idLproduct) references product(idProduct),
+	constraint fk_storage_location_storage foreign key(idLstorage) references productStorage(idProdStorage)
+);
+
+create table productSupplier(
+	idPsSupplier int,
+	idPsProduct int,
+	quantity int not null,
+	primary key (idPsSupplier, idPsProduct),
+	constraint fk_product_supplier_supplier foreign key(idPsSupplier) references supplier(idSupplier),
+	constraint fk_product_supplier_product foreign key(idPsProduct) references product(idProduct)
+);
+-- Criando a tabela de entrega (delivery)
+CREATE TABLE delivery (
+    idDelivery INT AUTO_INCREMENT PRIMARY KEY,
+    idOrder INT NOT NULL,
+    deliveryStatus ENUM('Pendente', 'Em trânsito', 'Entregue', 'Cancelado') DEFAULT 'Pendente',
+    trackingCode VARCHAR(50) UNIQUE,
+    CONSTRAINT fk_delivery_order FOREIGN KEY (idOrder) REFERENCES orders(idOrder)
+);
+alter table delivery auto_increment = 1;
+show tables;
